@@ -7,15 +7,11 @@
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-:root { --bg: #fff; --fg: #000; }
-body.dark { --bg: #000; --fg: #fff; }
-
 html, body {
   height: 100%;
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--fg);
-  transition: background 0.5s cubic-bezier(0.4,0,0.2,1), color 0.5s cubic-bezier(0.4,0,0.2,1);
+  background: #000;
+  color: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -24,6 +20,7 @@ html, body {
   overflow: hidden;
   cursor: none;
   -webkit-font-smoothing: antialiased;
+  user-select: none;
 }
 
 canvas {
@@ -36,15 +33,14 @@ canvas {
 .cursor {
   position: fixed;
   width: 10px; height: 10px;
-  background: var(--fg);
+  background: #fff;
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
   transform: translate(-50%, -50%);
-  transition: background 0.5s, width 0.15s, height 0.15s;
 }
 
-/* ── HERO BUTTON ─────────────────────────────────── */
+/* ── HERO ─────────────────────────────────────────── */
 .hero-wrap { position: relative; z-index: 10; }
 
 .btn-hero {
@@ -54,12 +50,11 @@ canvas {
   font-weight: 900;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--fg);
+  color: #fff;
   background: transparent;
-  border: 2.5px solid var(--fg);
+  border: none;
   cursor: none;
   outline: none;
-  transition: color 0.5s, border-color 0.5s, background 0.5s;
 }
 .btn-hero .label { position: relative; z-index: 2; display: inline-block; }
 .btn-hero .letter {
@@ -74,8 +69,8 @@ canvas {
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
 }
-.btn-hero .letter::before { color: #ff2d55; mix-blend-mode: multiply; }
-.btn-hero .letter::after  { color: #00c8ff; mix-blend-mode: multiply; }
+.btn-hero .letter::before { color: #ff2d55; mix-blend-mode: screen; }
+.btn-hero .letter::after  { color: #00c8ff; mix-blend-mode: screen; }
 
 .hero-border {
   position: absolute;
@@ -91,7 +86,48 @@ canvas {
 .btn-hero.active .letter::before { opacity: 0.6; transform: translate(-2px, 0); }
 .btn-hero.active .letter::after  { opacity: 0.6; transform: translate(2px, 0); }
 
-/* ── 5 SMALL BUTTONS ──────────────────────────────── */
+/* hero fades to a ghost while game runs */
+.hero-wrap.game-on .btn-hero { opacity: 0.08; pointer-events: auto; }
+
+/* ── GAME UI ──────────────────────────────────────── */
+#flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 500;
+}
+#score-wrap {
+  position: fixed;
+  bottom: 32px;
+  right: 36px;
+  text-align: right;
+  pointer-events: none;
+  z-index: 400;
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+#score-wrap.on { opacity: 1; }
+#score-wrap .lbl {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+#score-wrap .num {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 46px;
+  font-weight: bold;
+  color: #fff;
+  line-height: 1;
+  transition: color 0.12s;
+}
+#score-wrap .num.red { color: #ff2d55; }
+
+/* ── BUTTONS ──────────────────────────────────────── */
 .btn-row {
   position: relative;
   z-index: 10;
@@ -108,30 +144,27 @@ canvas {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   background: transparent;
-  border: 2px solid var(--fg);
-  color: var(--fg);
+  border: 2px solid #fff;
+  color: #fff;
   cursor: none;
   outline: none;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.5s, color 0.5s;
+  z-index: 10;
 }
 
-/* ── BTN 1: LAUNCH — letters fly up and slam down ── */
-.btn-launch .letter {
-  display: inline-block;
-  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
-}
+/* BTN 1: LAUNCH */
+.btn-launch .letter { display: inline-block; }
 
-/* ── BTN 2: GLITCH — text scrambles ─────────────── */
+/* BTN 2: GLITCH */
 .btn-glitch { font-family: 'Courier New', monospace; }
 
-/* ── BTN 3: FILL — wipe from left ───────────────── */
+/* BTN 3: FILL */
 .btn-fill::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--fg);
+  background: #fff;
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.35s cubic-bezier(0.77,0,0.175,1);
@@ -143,40 +176,37 @@ canvas {
   z-index: 1;
   transition: color 0.35s cubic-bezier(0.77,0,0.175,1);
 }
-.btn-fill:hover .inner { color: var(--bg); }
+.btn-fill:hover .inner { color: #000; }
 
-/* ── BTN 4: WAVE — sine wave letters ────────────── */
-.btn-wave .letter {
-  display: inline-block;
-}
-@keyframes wave-bounce {
-  0%, 100% { transform: translateY(0);    }
-  50%       { transform: translateY(-8px); }
-}
+/* BTN 4: WAVE */
+.btn-wave .letter { display: inline-block; }
 
-/* ── BTN 5: SHATTER — border explodes ───────────── */
-.btn-shatter {
-  transition: border-color 0.5s, color 0.5s, transform 0.15s;
-}
+/* BTN 5: SHATTER */
+.btn-shatter { transition: transform 0.15s; }
 .btn-shatter::after {
   content: '';
   position: absolute;
   inset: -6px;
-  border: 2px solid var(--fg);
+  border: 2px solid #fff;
   opacity: 0;
   transform: scale(1.12);
   transition: opacity 0.3s, transform 0.3s;
 }
 .btn-shatter:hover { transform: scale(0.96); }
 .btn-shatter:hover::after { opacity: 0.4; transform: scale(1.0); }
+
+/* bouncing state — transform only, keeps layout space */
+.btn.bouncing { z-index: 20 !important; will-change: transform; }
 </style>
 </head>
 <body>
 
 <div class="cursor" id="cursor"></div>
 <canvas id="c"></canvas>
+<div id="flash"></div>
+<div id="score-wrap"><span class="lbl">SCORE</span><span class="num" id="scoreNum">0000</span></div>
 
-<!-- ── HERO ── -->
+<!-- HERO -->
 <div class="hero-wrap" id="heroWrap">
   <button class="btn-hero" id="btnHero">
     <span class="label" id="heroLabel"></span>
@@ -195,58 +225,42 @@ canvas {
   </button>
 </div>
 
-<!-- ── 5 BUTTONS ── -->
-<div class="btn-row">
-  <button class="btn btn-launch" id="b1"><span class="inner" id="b1inner">LAUNCH</span></button>
-  <button class="btn btn-glitch" id="b2"><span class="inner" id="b2inner">CONTACT</span></button>
-  <button class="btn btn-fill"   id="b3"><span class="inner">EXPLORE</span></button>
-  <button class="btn btn-wave"   id="b4"><span class="inner" id="b4inner">BUILD</span></button>
+<!-- 5 BUTTONS -->
+<div class="btn-row" id="btnRow">
+  <button class="btn btn-launch"  id="b1"><span class="inner" id="b1inner">LAUNCH</span></button>
+  <button class="btn btn-glitch"  id="b2"><span class="inner" id="b2inner">CONTACT</span></button>
+  <button class="btn btn-fill"    id="b3"><span class="inner">EXPLORE</span></button>
+  <button class="btn btn-wave"    id="b4"><span class="inner" id="b4inner">BUILD</span></button>
   <button class="btn btn-shatter" id="b5"><span class="inner" id="b5inner">PORTFOLIO</span></button>
 </div>
 
 <script>
 const COLORS = ['#ff2d55','#ff9f0a','#ffcc00','#30d158','#0a84ff','#bf5af2','#ff375f','#00c8ff'];
 const NPARTS = 200;
-const body   = document.body;
-const cursor = document.getElementById('cursor');
-const canvas = document.getElementById('c');
-const ctx    = canvas.getContext('2d');
+const canvas  = document.getElementById('c');
+const ctx     = canvas.getContext('2d');
+const cursorEl = document.getElementById('cursor');
+const flashEl  = document.getElementById('flash');
+const scoreWrap = document.getElementById('score-wrap');
+const scoreNum  = document.getElementById('scoreNum');
 
-let W, H, isDark = false;
+let W, H, mouseX = 0, mouseY = 0;
 
-// ─── DARK/LIGHT TOGGLE ────────────────────────────────────────────
-let hoverCount = 0;
-function onAnyEnter() {
-  hoverCount++;
-  if (hoverCount === 1) {
-    isDark = true;
-    body.classList.add('dark');
-  }
-}
-function onAnyLeave() {
-  hoverCount--;
-  if (hoverCount === 0) {
-    isDark = false;
-    body.classList.remove('dark');
-  }
-}
-
-// ─── CURSOR ───────────────────────────────────────────────────────
 window.addEventListener('mousemove', e => {
-  cursor.style.left = e.clientX + 'px';
-  cursor.style.top  = e.clientY + 'px';
+  mouseX = e.clientX; mouseY = e.clientY;
+  cursorEl.style.left = mouseX + 'px';
+  cursorEl.style.top  = mouseY + 'px';
 });
 
-// ─── RESIZE ───────────────────────────────────────────────────────
+// ── RESIZE ──────────────────────────────────────────────────────
 let btnCX, btnCY, btnW, btnH;
 function resize() {
   W = canvas.width  = innerWidth;
   H = canvas.height = innerHeight;
   const r = document.getElementById('btnHero').getBoundingClientRect();
-  btnCX = r.left + r.width  / 2;
+  btnCX = r.left + r.width / 2;
   btnCY = r.top  + r.height / 2;
-  btnW  = r.width;
-  btnH  = r.height;
+  btnW  = r.width; btnH = r.height;
   const border = document.getElementById('heroBorder');
   const rect   = document.getElementById('heroRect');
   border.setAttribute('viewBox', `0 0 ${r.width+5} ${r.height+5}`);
@@ -256,8 +270,9 @@ function resize() {
 window.addEventListener('resize', resize);
 setTimeout(resize, 50);
 
-// ─── PARTICLES ────────────────────────────────────────────────────
+// ── PARTICLES ───────────────────────────────────────────────────
 let heroHovered = false;
+
 class Particle {
   constructor() { this.reset(true); }
   reset(init = false) {
@@ -279,8 +294,7 @@ class Particle {
       const dx = btnCX-this.x, dy = btnCY-this.y;
       const d  = Math.sqrt(dx*dx+dy*dy)||1;
       const f  = Math.min(350/(d*d+1), 3.0);
-      const nx = dx/d, ny = dy/d;
-      const tx = -ny, ty = nx;
+      const nx = dx/d, ny = dy/d, tx = -ny, ty = nx;
       this.vx += nx*f + tx*f*0.5; this.vy += ny*f + ty*f*0.5;
       this.vx *= 0.92; this.vy *= 0.92;
       if (d < 28) {
@@ -292,7 +306,7 @@ class Particle {
       this.vx *= 0.98; this.vy *= 0.98;
       this.vx += (Math.random()-.5)*0.1; this.vy += (Math.random()-.5)*0.1;
     }
-    this.trail.push({x:this.x,y:this.y});
+    this.trail.push({x:this.x, y:this.y});
     if (this.trail.length > 10) this.trail.shift();
     this.x += this.vx; this.y += this.vy;
     if (!heroHovered) {
@@ -317,7 +331,7 @@ class Particle {
   }
 }
 
-// ─── LIGHTNING ────────────────────────────────────────────────────
+// ── LIGHTNING ───────────────────────────────────────────────────
 const arcs = [];
 class Arc {
   constructor() {
@@ -327,8 +341,7 @@ class Arc {
     this.pts=this._gen(); this.color=COLORS[Math.floor(Math.random()*COLORS.length)];
   }
   _gen() {
-    const pts=[{x:this.x,y:this.y}];
-    let cx=this.x,cy=this.y;
+    const pts=[{x:this.x,y:this.y}]; let cx=this.x,cy=this.y;
     const ang=Math.random()*Math.PI*2, len=40+Math.random()*55;
     for(let i=0;i<6;i++){
       cx+=Math.cos(ang+(Math.random()-.5)*1.4)*(len/6);
@@ -347,24 +360,25 @@ class Arc {
   }
 }
 
-const parts = Array.from({length:NPARTS},()=>new Particle());
-let arcTimer=0, dashOffset=0;
+const parts = Array.from({length:NPARTS}, ()=>new Particle());
+let arcTimer=0, dashOffset=0, shockwave=null;
 
-// ─── SHOCKWAVE ────────────────────────────────────────────────────
-let shockwave=null;
-
+// ── RENDER LOOP ──────────────────────────────────────────────────
 function render() {
   ctx.clearRect(0,0,W,H);
-  if(shockwave){
+
+  if (shockwave) {
     shockwave.r+=26; shockwave.alpha-=0.028;
-    if(shockwave.alpha<=0) shockwave=null;
+    if (shockwave.alpha<=0) { shockwave=null; }
     else {
-      ctx.save(); ctx.strokeStyle=`rgba(${isDark?'255,255,255':'0,0,0'},${shockwave.alpha*0.35})`;
+      ctx.save(); ctx.strokeStyle=`rgba(255,255,255,${shockwave.alpha*0.35})`;
       ctx.lineWidth=3*shockwave.alpha;
       ctx.beginPath(); ctx.arc(btnCX,btnCY,shockwave.r,0,Math.PI*2); ctx.stroke(); ctx.restore();
     }
   }
+
   for(const p of parts){p.update();p.draw();}
+
   if(heroHovered){
     arcTimer++;
     if(arcTimer%4===0){arcs.push(new Arc());if(Math.random()<0.4)arcs.push(new Arc());}
@@ -377,11 +391,14 @@ function render() {
     dashOffset-=1.5;
     document.getElementById('heroRect').style.strokeDashoffset=dashOffset;
   }
+
+  if (gameOn) tickGame();
+
   requestAnimationFrame(render);
 }
 render();
 
-// ─── HERO BUTTON ──────────────────────────────────────────────────
+// ── HERO BUTTON ──────────────────────────────────────────────────
 const WORD = 'GO 2 WORK';
 document.getElementById('heroLabel').innerHTML =
   WORD.split('').map(ch =>
@@ -390,7 +407,6 @@ document.getElementById('heroLabel').innerHTML =
   ).join('');
 const hLetters = [...document.getElementById('heroLabel').querySelectorAll('.letter')];
 
-let flipTimer=null;
 function heroScatter(){
   hLetters.forEach((l,i)=>{
     const dx=(Math.random()-.5)*24, dy=(Math.random()-.5)*20-5;
@@ -411,32 +427,32 @@ function heroReset(){
 
 const heroBtn  = document.getElementById('btnHero');
 const heroWrap = document.getElementById('heroWrap');
-heroBtn.addEventListener('mouseenter',()=>{
-  heroHovered=true;
+
+heroBtn.addEventListener('mouseenter', ()=>{
+  heroHovered = true;
   heroBtn.classList.add('active');
-  heroScatter(); resize(); onAnyEnter();
+  heroScatter(); resize();
+  if (gameOn) { stopGame(); } else { startGame(); }
 });
-heroBtn.addEventListener('mouseleave',()=>{
-  heroHovered=false;
+heroBtn.addEventListener('mouseleave', ()=>{
+  heroHovered = false;
   heroBtn.classList.remove('active');
   heroReset(); arcs.length=0;
   heroWrap.style.transform='translate(0,0)';
-  onAnyLeave();
+  // fade hero to ghost once player moves off into the game
+  if (gameOn) setTimeout(()=>{ if(gameOn) heroWrap.classList.add('game-on'); }, 350);
 });
-heroBtn.addEventListener('click',()=>{
-  shockwave={r:0,alpha:1};
-  body.style.transition='background 0.05s';
-  body.classList.toggle('dark');
-  setTimeout(()=>{ body.classList.toggle('dark'); setTimeout(()=>body.style.transition='',300); },80);
-});
-window.addEventListener('mousemove',e=>{
+heroBtn.addEventListener('click', ()=>{ shockwave={r:0,alpha:1}; });
+window.addEventListener('mousemove', e=>{
   if(heroHovered){
     const dx=(e.clientX-btnCX)*0.18, dy=(e.clientY-btnCY)*0.18;
     heroWrap.style.transform=`translate(${dx}px,${dy}px)`;
   }
 });
 
-// ─── BTN 1: LAUNCH — letters rocket up, slam back ─────────────────
+// ── BUTTON ANIMATIONS ────────────────────────────────────────────
+
+// BTN 1: LAUNCH
 (function(){
   const inner = document.getElementById('b1inner');
   const word  = 'LAUNCH';
@@ -444,15 +460,13 @@ window.addEventListener('mousemove',e=>{
   const ls = [...inner.querySelectorAll('.letter')];
   let timers = [];
   document.getElementById('b1').addEventListener('mouseenter',()=>{
-    onAnyEnter();
     timers.forEach(clearTimeout); timers=[];
     ls.forEach((l,i)=>{
       timers.push(setTimeout(()=>{
         l.style.transition='transform 0.22s ease, opacity 0.18s';
         l.style.transform='translateY(-130%)'; l.style.opacity='0';
         timers.push(setTimeout(()=>{
-          l.style.transition='none';
-          l.style.transform='translateY(130%)';
+          l.style.transition='none'; l.style.transform='translateY(130%)';
           timers.push(setTimeout(()=>{
             l.style.transition='transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s';
             l.style.transform='translateY(0)'; l.style.opacity='1';
@@ -462,84 +476,246 @@ window.addEventListener('mousemove',e=>{
     });
   });
   document.getElementById('b1').addEventListener('mouseleave',()=>{
-    onAnyLeave();
     timers.forEach(clearTimeout); timers=[];
     ls.forEach(l=>{ l.style.transition='transform 0.3s,opacity 0.3s'; l.style.transform='translateY(0)'; l.style.opacity='1'; });
   });
 })();
 
-// ─── BTN 2: GLITCH — text scrambles into random chars ─────────────
+// BTN 2: GLITCH
 (function(){
-  const inner    = document.getElementById('b2inner');
-  const word     = 'CONTACT';
-  const charset  = '!@#$%^&*<>?/|0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const inner   = document.getElementById('b2inner');
+  const word    = 'CONTACT';
+  const charset = '!@#$%^&*<>?/|0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   inner.innerHTML = word.split('').map(c=>`<span class="letter">${c}</span>`).join('');
   const ls = [...inner.querySelectorAll('.letter')];
   let iv=null, settle=null;
   document.getElementById('b2').addEventListener('mouseenter',()=>{
-    onAnyEnter();
     clearInterval(iv); clearTimeout(settle);
-    iv=setInterval(()=>{
-      ls.forEach((l,i)=>{ l.textContent=Math.random()>0.55?word[i]:charset[Math.floor(Math.random()*charset.length)]; });
-    },45);
-    settle=setTimeout(()=>{
-      clearInterval(iv);
-      ls.forEach((l,i)=>{ l.textContent=word[i]; });
-    },900);
+    iv=setInterval(()=>{ ls.forEach((l,i)=>{ l.textContent=Math.random()>0.55?word[i]:charset[Math.floor(Math.random()*charset.length)]; }); },45);
+    settle=setTimeout(()=>{ clearInterval(iv); ls.forEach((l,i)=>{ l.textContent=word[i]; }); },900);
   });
   document.getElementById('b2').addEventListener('mouseleave',()=>{
-    onAnyLeave();
     clearInterval(iv); clearTimeout(settle);
     ls.forEach((l,i)=>{ l.textContent=word[i]; });
   });
 })();
 
-// ─── BTN 3: FILL — wipe ───────────────────────────────────────────
-document.getElementById('b3').addEventListener('mouseenter', onAnyEnter);
-document.getElementById('b3').addEventListener('mouseleave', onAnyLeave);
-
-// ─── BTN 4: WAVE — sine bounce ────────────────────────────────────
+// BTN 4: WAVE
 (function(){
   const inner = document.getElementById('b4inner');
   const word  = 'BUILD';
-  inner.innerHTML = word.split('').map((c,i)=>`<span class="letter" style="display:inline-block">${c}</span>`).join('');
+  inner.innerHTML = word.split('').map(c=>`<span class="letter" style="display:inline-block">${c}</span>`).join('');
   const ls = [...inner.querySelectorAll('.letter')];
-  let waving=false, waveRaf;
-  let t=0;
-  function wave(){
-    if(!waving) return;
-    t+=0.12;
-    ls.forEach((l,i)=>{ l.style.transform=`translateY(${Math.sin(t+i*0.9)*8}px)`; });
-    waveRaf=requestAnimationFrame(wave);
-  }
-  document.getElementById('b4').addEventListener('mouseenter',()=>{
-    onAnyEnter(); waving=true; wave();
-  });
-  document.getElementById('b4').addEventListener('mouseleave',()=>{
-    onAnyLeave(); waving=false; cancelAnimationFrame(waveRaf);
-    ls.forEach(l=>{ l.style.transition='transform 0.3s'; l.style.transform='translateY(0)'; });
-  });
+  let waving=false, waveRaf, t=0;
+  function wave(){ if(!waving) return; t+=0.12; ls.forEach((l,i)=>{ l.style.transform=`translateY(${Math.sin(t+i*0.9)*8}px)`; }); waveRaf=requestAnimationFrame(wave); }
+  document.getElementById('b4').addEventListener('mouseenter',()=>{ waving=true; wave(); });
+  document.getElementById('b4').addEventListener('mouseleave',()=>{ waving=false; cancelAnimationFrame(waveRaf); ls.forEach(l=>{ l.style.transition='transform 0.3s'; l.style.transform='translateY(0)'; }); });
 })();
 
-// ─── BTN 5: SHATTER — double border + shake ───────────────────────
+// BTN 5: SHATTER
 (function(){
   const btn = document.getElementById('b5');
   let shakeRaf, shaking=false;
-  let sx=0, sy=0;
-  function shake(){
-    if(!shaking) return;
-    sx=(Math.random()-.5)*5; sy=(Math.random()-.5)*5;
-    btn.style.transform=`translate(${sx}px,${sy}px) scale(0.97)`;
-    shakeRaf=requestAnimationFrame(shake);
-  }
-  btn.addEventListener('mouseenter',()=>{
-    onAnyEnter(); shaking=true; shake();
-  });
-  btn.addEventListener('mouseleave',()=>{
-    onAnyLeave(); shaking=false; cancelAnimationFrame(shakeRaf);
-    btn.style.transform='translate(0,0) scale(1)';
-  });
+  function shake(){ if(!shaking) return; btn.style.transform=`translate(${(Math.random()-.5)*5}px,${(Math.random()-.5)*5}px) scale(0.97)`; shakeRaf=requestAnimationFrame(shake); }
+  btn.addEventListener('mouseenter',()=>{ shaking=true; shake(); });
+  btn.addEventListener('mouseleave',()=>{ shaking=false; cancelAnimationFrame(shakeRaf); btn.style.transform='translate(0,0) scale(1)'; });
 })();
+
+// ════════════════════════════════════════════════════════════════
+//  GAME
+// ════════════════════════════════════════════════════════════════
+
+let gameOn      = false;
+let score       = 0;
+let debris      = [];
+let bouncers    = [];
+let chaos       = false;   // 1000pt mode
+let hitCD       = 0;       // hit cooldown frames
+let spawnRef    = null;
+let tickRef     = null;
+const HIT_R     = 8;       // cursor collision radius
+
+// ── SCORE ────────────────────────────────────────────────────────
+function setScore(n) {
+  score = Math.max(0, n);
+  scoreNum.textContent = score.toString().padStart(4,'0');
+}
+function addScore(n) {
+  setScore(score + n);
+  if (n < 0) {
+    scoreNum.classList.add('red');
+    setTimeout(()=> scoreNum.classList.remove('red'), 200);
+  }
+  if (score >= 1000 && !chaos) activateChaos();
+}
+
+// ── START / STOP ─────────────────────────────────────────────────
+function startGame() {
+  gameOn  = true;
+  score   = 0;
+  debris  = [];
+  bouncers = [];
+  chaos   = false;
+  hitCD   = 0;
+  setScore(0);
+  scoreWrap.classList.add('on');
+  tickRef = setInterval(()=>{ if(gameOn) addScore(1); }, 2500); // slow tick
+  scheduleSpawn();
+}
+
+function stopGame() {
+  gameOn = false;
+  clearInterval(tickRef);
+  clearTimeout(spawnRef);
+  debris  = [];
+
+  // restore bouncers
+  if (chaos) {
+    bouncers.forEach(b => {
+      b.el.classList.remove('bouncing');
+      b.el.style.transform = '';
+    });
+    bouncers = [];
+    chaos = false;
+  }
+
+  scoreWrap.classList.remove('on');
+  heroWrap.classList.remove('game-on');
+
+  // green flash = escaped
+  flashEl.style.background = 'rgba(48,209,88,0.14)';
+  setTimeout(()=>{ flashEl.style.background=''; }, 380);
+}
+
+// ── DEBRIS SPAWN ─────────────────────────────────────────────────
+function spawnInterval() {
+  if (score < 100)  return 1800;
+  if (score < 300)  return 1300;
+  if (score < 600)  return 950;
+  if (score < 1000) return 620;
+  return 370;
+}
+
+function scheduleSpawn() {
+  if (!gameOn) return;
+  spawnRef = setTimeout(()=>{
+    if (!gameOn) return;
+    debris.push(new Rock());
+    if (score > 350  && Math.random() < 0.35) debris.push(new Rock());
+    if (score > 700  && Math.random() < 0.25) debris.push(new Rock());
+    scheduleSpawn();
+  }, spawnInterval() + Math.random()*420);
+}
+
+// ── ROCK (debris) ────────────────────────────────────────────────
+class Rock {
+  constructor() {
+    const t = Math.floor(Math.random()*4);
+    if (t===0) { this.w=14+Math.random()*22; this.h=14+Math.random()*22; }  // block
+    if (t===1) { this.w=38+Math.random()*32; this.h=4+Math.random()*6;   }  // wide bar
+    if (t===2) { this.w=6+Math.random()*8;   this.h=6+Math.random()*8;   }  // pebble
+    if (t===3) { this.w=18+Math.random()*14; this.h=18+Math.random()*14; }  // medium
+    this.x  = Math.random() * (W - this.w);
+    this.y  = -this.h - 8;
+    const spd = 1.6 + Math.random()*2 + Math.min(score * 0.004, 6);
+    this.vy = spd;
+    this.vx = (Math.random()-0.5) * 1.5;
+    this.a  = 0.6 + Math.random()*0.4;
+    this.fl = 0;      // flash timer
+    this.done = false;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    if (this.x < 0)       { this.x = 0;       this.vx =  Math.abs(this.vx); }
+    if (this.x+this.w > W){ this.x = W-this.w; this.vx = -Math.abs(this.vx); }
+    if (this.fl > 0) this.fl--;
+    if (this.y > H+30) this.done = true;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.a;
+    ctx.fillStyle   = this.fl > 0 ? '#ff2d55' : '#fff';
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.restore();
+  }
+  hits(mx, my) {
+    return mx+HIT_R > this.x && mx-HIT_R < this.x+this.w &&
+           my+HIT_R > this.y && my-HIT_R < this.y+this.h;
+  }
+}
+
+// ── CHAOS MODE (1000 pts) ────────────────────────────────────────
+function activateChaos() {
+  chaos = true;
+  const ids = ['b1','b2','b3','b4','b5'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    const r  = el.getBoundingClientRect();
+    // store original layout position
+    const ox = r.left, oy = r.top;
+    bouncers.push({
+      el, ox, oy,
+      x: r.left, y: r.top,
+      w: r.width, h: r.height,
+      vx: (3 + Math.random()*3) * (Math.random()<0.5?1:-1),
+      vy: (3 + Math.random()*3) * (Math.random()<0.5?1:-1),
+    });
+    el.classList.add('bouncing');
+  });
+}
+
+function updateBouncers() {
+  bouncers.forEach(b => {
+    b.x += b.vx; b.y += b.vy;
+    if (b.x < 0)       { b.x = 0;       b.vx =  Math.abs(b.vx); }
+    if (b.x+b.w > W)   { b.x = W-b.w;   b.vx = -Math.abs(b.vx); }
+    if (b.y < 0)       { b.y = 0;        b.vy =  Math.abs(b.vy); }
+    if (b.y+b.h > H)   { b.y = H-b.h;   b.vy = -Math.abs(b.vy); }
+    // move via transform (preserves layout space)
+    b.el.style.transform = `translate(${b.x - b.ox}px, ${b.y - b.oy}px)`;
+    // cursor collision
+    if (hitCD===0 && mouseX > b.x && mouseX < b.x+b.w && mouseY > b.y && mouseY < b.y+b.h) {
+      onHit();
+    }
+  });
+}
+
+// ── STATIC BUTTON COLLISION ──────────────────────────────────────
+function checkStaticBtns() {
+  if (chaos) return; // handled in updateBouncers
+  ['b1','b2','b3','b4','b5'].forEach(id => {
+    if (hitCD > 0) return;
+    const r = document.getElementById(id).getBoundingClientRect();
+    if (mouseX > r.left && mouseX < r.right && mouseY > r.top && mouseY < r.bottom) onHit();
+  });
+}
+
+// ── HIT ──────────────────────────────────────────────────────────
+function onHit() {
+  hitCD = 50;
+  addScore(-5);
+  flashEl.style.background = 'rgba(255,45,85,0.2)';
+  setTimeout(()=>{ flashEl.style.background=''; }, 130);
+}
+
+// ── GAME TICK (called from render loop) ──────────────────────────
+function tickGame() {
+  if (hitCD > 0) hitCD--;
+
+  // debris
+  for (let i = debris.length-1; i >= 0; i--) {
+    const d = debris[i];
+    d.update(); d.draw();
+    // collision
+    if (hitCD===0 && d.hits(mouseX, mouseY)) { d.fl=12; onHit(); }
+    // cleared bottom → +1
+    if (!d._scored && d.done) { d._scored=true; addScore(1); }
+    if (d.done) debris.splice(i,1);
+  }
+
+  checkStaticBtns();
+  if (chaos) updateBouncers();
+}
 </script>
 </body>
 </html>
