@@ -3,121 +3,172 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Go To Work</title>
+<title>Button Lab</title>
 <style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-  html, body {
-    height: 100%;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    font-family: 'Inter', system-ui, sans-serif;
-    cursor: none;
-  }
+:root { --bg: #fff; --fg: #000; }
+body.dark { --bg: #000; --fg: #fff; }
 
-  canvas {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
-  }
+html, body {
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  transition: background 0.5s cubic-bezier(0.4,0,0.2,1), color 0.5s cubic-bezier(0.4,0,0.2,1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 70px;
+  overflow: hidden;
+  cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
 
-  .cursor {
-    position: fixed;
-    width: 10px;
-    height: 10px;
-    background: #000;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
-  }
+canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
 
-  .cursor.hovered {
-    width: 6px;
-    height: 6px;
-    background: #ff2d55;
-  }
+.cursor {
+  position: fixed;
+  width: 10px; height: 10px;
+  background: var(--fg);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: background 0.5s, width 0.15s, height 0.15s;
+}
 
-  .btn-wrap {
-    position: relative;
-    z-index: 10;
-  }
+/* ── HERO BUTTON ─────────────────────────────────── */
+.hero-wrap { position: relative; z-index: 10; }
 
-  .btn {
-    position: relative;
-    padding: 22px 60px;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: #000;
-    background: #fff;
-    border: 2.5px solid #000;
-    cursor: none;
-    outline: none;
-    overflow: visible;
-    transition: color 0.4s ease, border-color 0.4s ease, background 0.4s ease;
-    -webkit-font-smoothing: antialiased;
-  }
+.btn-hero {
+  position: relative;
+  padding: 24px 70px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 2.5px solid var(--fg);
+  cursor: none;
+  outline: none;
+  transition: color 0.5s, border-color 0.5s, background 0.5s;
+}
+.btn-hero .label { position: relative; z-index: 2; display: inline-block; }
+.btn-hero .letter {
+  display: inline-block;
+  transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1), color 0.3s, opacity 0.25s;
+}
+.btn-hero .letter::before,
+.btn-hero .letter::after {
+  content: attr(data-l);
+  position: absolute;
+  top: 0; left: 0;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.btn-hero .letter::before { color: #ff2d55; mix-blend-mode: multiply; }
+.btn-hero .letter::after  { color: #00c8ff; mix-blend-mode: multiply; }
 
-  .btn .label {
-    position: relative;
-    display: inline-block;
-    z-index: 2;
-  }
+.hero-border {
+  position: absolute;
+  inset: -2.5px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.3s;
+  overflow: visible;
+}
+.hero-border rect { fill: none; stroke: url(#arc-grad); stroke-width: 3; stroke-dasharray: 18 7; }
+.btn-hero.active .hero-border { opacity: 1; }
+.btn-hero.active .letter::before { opacity: 0.6; transform: translate(-2px, 0); }
+.btn-hero.active .letter::after  { opacity: 0.6; transform: translate(2px, 0); }
 
-  .btn .letter {
-    display: inline-block;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s;
-    position: relative;
-  }
+/* ── 5 SMALL BUTTONS ──────────────────────────────── */
+.btn-row {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
 
-  /* chromatic ghost copies */
-  .btn .letter::before,
-  .btn .letter::after {
-    content: attr(data-l);
-    position: absolute;
-    top: 0; left: 0;
-    opacity: 0;
-    transition: opacity 0.2s, transform 0.2s;
-  }
-  .btn .letter::before { color: #ff2d55; mix-blend-mode: multiply; }
-  .btn .letter::after  { color: #00c8ff; mix-blend-mode: multiply; }
+.btn {
+  padding: 14px 34px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 2px solid var(--fg);
+  color: var(--fg);
+  cursor: none;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.5s, color 0.5s;
+}
 
-  /* BORDER GLOW — animated SVG rectangle overlay */
-  .btn-border {
-    position: absolute;
-    inset: -2.5px;
-    pointer-events: none;
-    overflow: visible;
-    z-index: 3;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .btn-border rect {
-    fill: none;
-    stroke: url(#arc-grad);
-    stroke-width: 3;
-    stroke-dasharray: 20 8;
-    stroke-dashoffset: 0;
-  }
+/* ── BTN 1: LAUNCH — letters fly up and slam down ── */
+.btn-launch .letter {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+}
 
-  /* active states */
-  .btn.active {
-    color: #fff;
-    background: #000;
-    border-color: transparent;
-  }
-  .btn.active .btn-border { opacity: 1; }
-  .btn.active .letter::before { opacity: 0.7; transform: translate(-2.5px, 0); }
-  .btn.active .letter::after  { opacity: 0.7; transform: translate(2.5px, 0); }
+/* ── BTN 2: GLITCH — text scrambles ─────────────── */
+.btn-glitch { font-family: 'Courier New', monospace; }
+
+/* ── BTN 3: FILL — wipe from left ───────────────── */
+.btn-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--fg);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.77,0,0.175,1);
+  z-index: 0;
+}
+.btn-fill:hover::before { transform: scaleX(1); }
+.btn-fill .inner {
+  position: relative;
+  z-index: 1;
+  transition: color 0.35s cubic-bezier(0.77,0,0.175,1);
+}
+.btn-fill:hover .inner { color: var(--bg); }
+
+/* ── BTN 4: WAVE — sine wave letters ────────────── */
+.btn-wave .letter {
+  display: inline-block;
+}
+@keyframes wave-bounce {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-8px); }
+}
+
+/* ── BTN 5: SHATTER — border explodes ───────────── */
+.btn-shatter {
+  transition: border-color 0.5s, color 0.5s, transform 0.15s;
+}
+.btn-shatter::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 2px solid var(--fg);
+  opacity: 0;
+  transform: scale(1.12);
+  transition: opacity 0.3s, transform 0.3s;
+}
+.btn-shatter:hover { transform: scale(0.96); }
+.btn-shatter:hover::after { opacity: 0.4; transform: scale(1.0); }
 </style>
 </head>
 <body>
@@ -125,387 +176,370 @@
 <div class="cursor" id="cursor"></div>
 <canvas id="c"></canvas>
 
-<div class="btn-wrap" id="btnWrap">
-  <button class="btn" id="btn">
-    <span class="label" id="label"></span>
-    <svg class="btn-border" id="btnBorder" viewBox="0 0 0 0" xmlns="http://www.w3.org/2000/svg">
+<!-- ── HERO ── -->
+<div class="hero-wrap" id="heroWrap">
+  <button class="btn-hero" id="btnHero">
+    <span class="label" id="heroLabel"></span>
+    <svg class="hero-border" id="heroBorder" viewBox="0 0 0 0" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="arc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%"   stop-color="#ff2d55"/>
-          <stop offset="33%"  stop-color="#ff9f0a"/>
-          <stop offset="66%"  stop-color="#30d158"/>
-          <stop offset="100%" stop-color="#0a84ff"/>
+          <stop offset="25%"  stop-color="#ff9f0a"/>
+          <stop offset="50%"  stop-color="#30d158"/>
+          <stop offset="75%"  stop-color="#0a84ff"/>
+          <stop offset="100%" stop-color="#bf5af2"/>
         </linearGradient>
       </defs>
-      <rect id="borderRect" x="1.5" y="1.5" rx="0" ry="0"/>
+      <rect id="heroRect" x="1.5" y="1.5"/>
     </svg>
   </button>
 </div>
 
-<script>
-// ─── CONFIG ───────────────────────────────────────────────────────
-const WORD   = 'GO TO WORK';
-const COLORS = ['#ff2d55','#ff9f0a','#ffcc00','#30d158','#0a84ff','#bf5af2','#ff375f','#00c8ff'];
-const NPARTS = 220;
+<!-- ── 5 BUTTONS ── -->
+<div class="btn-row">
+  <button class="btn btn-launch" id="b1"><span class="inner" id="b1inner">LAUNCH</span></button>
+  <button class="btn btn-glitch" id="b2"><span class="inner" id="b2inner">CONTACT</span></button>
+  <button class="btn btn-fill"   id="b3"><span class="inner">EXPLORE</span></button>
+  <button class="btn btn-wave"   id="b4"><span class="inner" id="b4inner">BUILD</span></button>
+  <button class="btn btn-shatter" id="b5"><span class="inner" id="b5inner">PORTFOLIO</span></button>
+</div>
 
-// ─── SETUP ────────────────────────────────────────────────────────
+<script>
+const COLORS = ['#ff2d55','#ff9f0a','#ffcc00','#30d158','#0a84ff','#bf5af2','#ff375f','#00c8ff'];
+const NPARTS = 200;
+const body   = document.body;
+const cursor = document.getElementById('cursor');
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-const btn    = document.getElementById('btn');
-const label  = document.getElementById('label');
-const wrap   = document.getElementById('btnWrap');
-const cursor = document.getElementById('cursor');
-const border = document.getElementById('btnBorder');
-const bRect  = document.getElementById('borderRect');
 
-let W, H, btnCX, btnCY, btnW, btnH;
-let mouse = { x: innerWidth/2, y: innerHeight/2 };
-let hovered = false;
-let animId;
+let W, H, isDark = false;
 
-// build letter spans
-label.innerHTML = WORD.split('').map(ch =>
-  ch === ' '
-    ? '<span class="letter" data-l=" ">&nbsp;</span>'
-    : `<span class="letter" data-l="${ch}">${ch}</span>`
-).join('');
-const letters = [...label.querySelectorAll('.letter')];
+// ─── DARK/LIGHT TOGGLE ────────────────────────────────────────────
+let hoverCount = 0;
+function onAnyEnter() {
+  hoverCount++;
+  if (hoverCount === 1) {
+    isDark = true;
+    body.classList.add('dark');
+  }
+}
+function onAnyLeave() {
+  hoverCount--;
+  if (hoverCount === 0) {
+    isDark = false;
+    body.classList.remove('dark');
+  }
+}
 
-// resize
+// ─── CURSOR ───────────────────────────────────────────────────────
+window.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+});
+
+// ─── RESIZE ───────────────────────────────────────────────────────
+let btnCX, btnCY, btnW, btnH;
 function resize() {
   W = canvas.width  = innerWidth;
   H = canvas.height = innerHeight;
-  const r = btn.getBoundingClientRect();
+  const r = document.getElementById('btnHero').getBoundingClientRect();
   btnCX = r.left + r.width  / 2;
   btnCY = r.top  + r.height / 2;
   btnW  = r.width;
   btnH  = r.height;
+  const border = document.getElementById('heroBorder');
+  const rect   = document.getElementById('heroRect');
   border.setAttribute('viewBox', `0 0 ${r.width+5} ${r.height+5}`);
-  bRect.setAttribute('width',  r.width+2);
-  bRect.setAttribute('height', r.height+2);
+  rect.setAttribute('width',  r.width+2);
+  rect.setAttribute('height', r.height+2);
 }
 window.addEventListener('resize', resize);
 setTimeout(resize, 50);
 
 // ─── PARTICLES ────────────────────────────────────────────────────
+let heroHovered = false;
 class Particle {
   constructor() { this.reset(true); }
-
-  reset(initial = false) {
-    const side = Math.floor(Math.random() * 4);
-    if (initial) {
-      this.x = Math.random() * W;
-      this.y = Math.random() * H;
-    } else {
-      if      (side === 0) { this.x = Math.random() * W; this.y = -10; }
-      else if (side === 1) { this.x = W + 10; this.y = Math.random() * H; }
-      else if (side === 2) { this.x = Math.random() * W; this.y = H + 10; }
-      else                 { this.x = -10; this.y = Math.random() * H; }
+  reset(init = false) {
+    if (init) { this.x = Math.random()*W; this.y = Math.random()*H; }
+    else {
+      const s = Math.floor(Math.random()*4);
+      this.x = s===0||s===2 ? Math.random()*W : s===1 ? W+10 : -10;
+      this.y = s===0 ? -10 : s===2 ? H+10 : Math.random()*H;
     }
-    this.vx     = (Math.random() - 0.5) * 1.2;
-    this.vy     = (Math.random() - 0.5) * 1.2;
-    this.r      = Math.random() * 2.8 + 0.8;
-    this.color  = COLORS[Math.floor(Math.random() * COLORS.length)];
-    this.alpha  = Math.random() * 0.7 + 0.2;
-    this.angle  = Math.random() * Math.PI * 2;
-    this.speed  = Math.random() * 2 + 1;
-    this.trail  = [];
-    this.pulled = false;
+    this.vx    = (Math.random()-0.5)*1.2;
+    this.vy    = (Math.random()-0.5)*1.2;
+    this.r     = Math.random()*2.5+0.7;
+    this.color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    this.alpha = Math.random()*0.7+0.2;
+    this.trail = [];
   }
-
   update() {
-    if (hovered) {
-      const dx    = btnCX - this.x;
-      const dy    = btnCY - this.y;
-      const dist  = Math.sqrt(dx*dx + dy*dy);
-      const force = Math.min(380 / (dist * dist + 1), 3.2);
-
-      // rotational component — creates the vortex spiral
-      const nx = dx / dist;
-      const ny = dy / dist;
-      const tx = -ny; // tangent
-      const ty =  nx;
-      const swirl = 1.8;
-
-      this.vx += (nx * force + tx * swirl * force * 0.5);
-      this.vy += (ny * force + ty * swirl * force * 0.5);
-
-      // damping
-      this.vx *= 0.92;
-      this.vy *= 0.92;
-
-      // when very close: burst outward
-      if (dist < 30) {
-        const bounce = 6 + Math.random() * 4;
-        this.vx = -nx * bounce + (Math.random()-0.5)*4;
-        this.vy = -ny * bounce + (Math.random()-0.5)*4;
-        this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    if (heroHovered) {
+      const dx = btnCX-this.x, dy = btnCY-this.y;
+      const d  = Math.sqrt(dx*dx+dy*dy)||1;
+      const f  = Math.min(350/(d*d+1), 3.0);
+      const nx = dx/d, ny = dy/d;
+      const tx = -ny, ty = nx;
+      this.vx += nx*f + tx*f*0.5; this.vy += ny*f + ty*f*0.5;
+      this.vx *= 0.92; this.vy *= 0.92;
+      if (d < 28) {
+        this.vx = -nx*(6+Math.random()*4)+(Math.random()-.5)*4;
+        this.vy = -ny*(6+Math.random()*4)+(Math.random()-.5)*4;
+        this.color = COLORS[Math.floor(Math.random()*COLORS.length)];
       }
     } else {
-      this.vx *= 0.98;
-      this.vy *= 0.98;
-      this.vx += (Math.random() - 0.5) * 0.1;
-      this.vy += (Math.random() - 0.5) * 0.1;
+      this.vx *= 0.98; this.vy *= 0.98;
+      this.vx += (Math.random()-.5)*0.1; this.vy += (Math.random()-.5)*0.1;
     }
-
-    this.trail.push({ x: this.x, y: this.y });
+    this.trail.push({x:this.x,y:this.y});
     if (this.trail.length > 10) this.trail.shift();
-
-    this.x += this.vx;
-    this.y += this.vy;
-    this.angle += 0.04;
-
-    // wrap around edges (only when not pulled)
-    if (!hovered) {
-      if (this.x < -20) this.x = W + 20;
-      if (this.x > W+20) this.x = -20;
-      if (this.y < -20) this.y = H + 20;
-      if (this.y > H+20) this.y = -20;
+    this.x += this.vx; this.y += this.vy;
+    if (!heroHovered) {
+      if (this.x<-20) this.x=W+20; if (this.x>W+20) this.x=-20;
+      if (this.y<-20) this.y=H+20; if (this.y>H+20) this.y=-20;
     }
   }
-
   draw() {
-    // draw trail
-    if (hovered && this.trail.length > 2) {
-      ctx.save();
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth   = this.r * 0.6;
-      ctx.lineCap     = 'round';
-      ctx.globalAlpha = this.alpha * 0.35;
-      ctx.beginPath();
-      ctx.moveTo(this.trail[0].x, this.trail[0].y);
-      for (let i = 1; i < this.trail.length; i++) {
-        ctx.lineTo(this.trail[i].x, this.trail[i].y);
-      }
-      ctx.stroke();
-      ctx.restore();
+    if (heroHovered && this.trail.length > 2) {
+      ctx.save(); ctx.strokeStyle=this.color; ctx.lineWidth=this.r*0.6;
+      ctx.lineCap='round'; ctx.globalAlpha=this.alpha*0.3;
+      ctx.beginPath(); ctx.moveTo(this.trail[0].x,this.trail[0].y);
+      for(let i=1;i<this.trail.length;i++) ctx.lineTo(this.trail[i].x,this.trail[i].y);
+      ctx.stroke(); ctx.restore();
     }
-
     ctx.save();
-    ctx.globalAlpha = this.alpha * (hovered ? 1 : 0.4);
-    ctx.fillStyle   = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur  = hovered ? 12 : 0;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.globalAlpha = this.alpha*(heroHovered?1:0.3);
+    ctx.fillStyle = this.color;
+    ctx.shadowColor = this.color; ctx.shadowBlur = heroHovered?10:0;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }
 }
 
-// ─── LIGHTNING ARCS ──────────────────────────────────────────────
+// ─── LIGHTNING ────────────────────────────────────────────────────
 const arcs = [];
 class Arc {
   constructor() {
-    const perim = 2 * (btnW + btnH);
-    const start = Math.random() * perim;
-    this.x = btnCX - btnW/2 + (start < btnW ? start : start < btnW+btnH ? btnW : start < 2*btnW+btnH ? 2*btnW+btnH-start : 0);
-    this.y = btnCY - btnH/2 + (start < btnW ? 0 : start < btnW+btnH ? start-btnW : btnH);
-    this.life  = 0;
-    this.maxLife = 18 + Math.random() * 14;
-    this.pts   = this.generate();
-    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    this.x = btnCX+(Math.random()-.5)*btnW;
+    this.y = btnCY+(Math.random()-.5)*btnH;
+    this.life=0; this.maxLife=16+Math.random()*12;
+    this.pts=this._gen(); this.color=COLORS[Math.floor(Math.random()*COLORS.length)];
   }
-  generate() {
-    const len = 40 + Math.random() * 60;
-    const ang = Math.random() * Math.PI * 2;
-    const pts = [{ x: this.x, y: this.y }];
-    let cx = this.x, cy = this.y;
-    for (let i = 0; i < 6; i++) {
-      const da = (Math.random() - 0.5) * 1.4;
-      cx += Math.cos(ang + da) * (len / 6);
-      cy += Math.sin(ang + da) * (len / 6);
-      pts.push({ x: cx, y: cy });
+  _gen() {
+    const pts=[{x:this.x,y:this.y}];
+    let cx=this.x,cy=this.y;
+    const ang=Math.random()*Math.PI*2, len=40+Math.random()*55;
+    for(let i=0;i<6;i++){
+      cx+=Math.cos(ang+(Math.random()-.5)*1.4)*(len/6);
+      cy+=Math.sin(ang+(Math.random()-.5)*1.4)*(len/6);
+      pts.push({x:cx,y:cy});
     }
     return pts;
   }
-  draw() {
-    const t = this.life / this.maxLife;
-    ctx.save();
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth   = 1.5 * (1 - t);
-    ctx.globalAlpha = (1 - t) * 0.85;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur  = 8;
-    ctx.beginPath();
-    ctx.moveTo(this.pts[0].x, this.pts[0].y);
-    for (let i = 1; i < this.pts.length; i++) ctx.lineTo(this.pts[i].x, this.pts[i].y);
-    ctx.stroke();
-    ctx.restore();
+  draw(){
+    const t=this.life/this.maxLife;
+    ctx.save(); ctx.strokeStyle=this.color; ctx.lineWidth=1.5*(1-t);
+    ctx.globalAlpha=(1-t)*0.8; ctx.shadowColor=this.color; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.moveTo(this.pts[0].x,this.pts[0].y);
+    for(let i=1;i<this.pts.length;i++) ctx.lineTo(this.pts[i].x,this.pts[i].y);
+    ctx.stroke(); ctx.restore();
   }
 }
+
+const parts = Array.from({length:NPARTS},()=>new Particle());
+let arcTimer=0, dashOffset=0;
 
 // ─── SHOCKWAVE ────────────────────────────────────────────────────
-let shockwave = null;
-function fireShockwave() {
-  shockwave = { r: 0, maxR: Math.max(W, H) * 1.1, alpha: 1 };
-}
-
-// ─── INIT PARTICLES ───────────────────────────────────────────────
-const parts = Array.from({ length: NPARTS }, () => new Particle());
-
-// ─── RENDER LOOP ──────────────────────────────────────────────────
-let arcTimer = 0;
-let dashOffset = 0;
+let shockwave=null;
 
 function render() {
-  ctx.clearRect(0, 0, W, H);
-
-  // shockwave
-  if (shockwave) {
-    shockwave.r     += 28;
-    shockwave.alpha -= 0.025;
-    if (shockwave.alpha <= 0) { shockwave = null; }
+  ctx.clearRect(0,0,W,H);
+  if(shockwave){
+    shockwave.r+=26; shockwave.alpha-=0.028;
+    if(shockwave.alpha<=0) shockwave=null;
     else {
-      ctx.save();
-      ctx.strokeStyle = `rgba(0,0,0,${shockwave.alpha * 0.4})`;
-      ctx.lineWidth   = 3 * shockwave.alpha;
-      ctx.beginPath();
-      ctx.arc(btnCX, btnCY, shockwave.r, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+      ctx.save(); ctx.strokeStyle=`rgba(${isDark?'255,255,255':'0,0,0'},${shockwave.alpha*0.35})`;
+      ctx.lineWidth=3*shockwave.alpha;
+      ctx.beginPath(); ctx.arc(btnCX,btnCY,shockwave.r,0,Math.PI*2); ctx.stroke(); ctx.restore();
     }
   }
-
-  // particles
-  for (const p of parts) { p.update(); p.draw(); }
-
-  // lightning
-  if (hovered) {
+  for(const p of parts){p.update();p.draw();}
+  if(heroHovered){
     arcTimer++;
-    if (arcTimer % 4 === 0) {
-      arcs.push(new Arc());
-      if (Math.random() < 0.4) arcs.push(new Arc());
-    }
+    if(arcTimer%4===0){arcs.push(new Arc());if(Math.random()<0.4)arcs.push(new Arc());}
   }
-  for (let i = arcs.length - 1; i >= 0; i--) {
-    arcs[i].life++;
-    arcs[i].draw();
-    if (arcs[i].life >= arcs[i].maxLife) arcs.splice(i, 1);
+  for(let i=arcs.length-1;i>=0;i--){
+    arcs[i].life++; arcs[i].draw();
+    if(arcs[i].life>=arcs[i].maxLife) arcs.splice(i,1);
   }
-
-  // animated dash border
-  if (hovered) {
-    dashOffset -= 1.5;
-    bRect.style.strokeDashoffset = dashOffset;
+  if(heroHovered){
+    dashOffset-=1.5;
+    document.getElementById('heroRect').style.strokeDashoffset=dashOffset;
   }
-
-  animId = requestAnimationFrame(render);
+  requestAnimationFrame(render);
 }
 render();
 
-// ─── MOUSE ────────────────────────────────────────────────────────
-let rafMouse;
-window.addEventListener('mousemove', e => {
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
+// ─── HERO BUTTON ──────────────────────────────────────────────────
+const WORD = 'GO 2 WORK';
+document.getElementById('heroLabel').innerHTML =
+  WORD.split('').map(ch =>
+    ch===' ' ? '<span class="letter" data-l=" ">&nbsp;</span>'
+             : `<span class="letter" data-l="${ch}">${ch}</span>`
+  ).join('');
+const hLetters = [...document.getElementById('heroLabel').querySelectorAll('.letter')];
 
-  cursor.style.left = e.clientX + 'px';
-  cursor.style.top  = e.clientY + 'px';
+let flipTimer=null;
+function heroScatter(){
+  hLetters.forEach((l,i)=>{
+    const dx=(Math.random()-.5)*24, dy=(Math.random()-.5)*20-5;
+    const rot=(Math.random()-.5)*32, delay=i*30;
+    l.style.transition=`transform ${0.5+Math.random()*0.2}s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms,color 0.3s,opacity 0.2s ${delay}ms`;
+    l.style.transform=`translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+    l.style.color=COLORS[i%COLORS.length];
+  });
+}
+function heroReset(){
+  hLetters.forEach((l,i)=>{
+    const delay=i*18;
+    l.style.transition=`transform 0.6s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms,color 0.3s ${delay}ms,opacity 0.3s ${delay}ms`;
+    l.style.transform='translate(0,0) rotate(0deg)';
+    l.style.color=''; l.style.opacity='1';
+  });
+}
 
-  if (hovered) {
-    // magnetic: pull button toward cursor, max 14px
-    const dx = (e.clientX - btnCX) * 0.18;
-    const dy = (e.clientY - btnCY) * 0.18;
-    wrap.style.transform = `translate(${dx}px, ${dy}px)`;
+const heroBtn  = document.getElementById('btnHero');
+const heroWrap = document.getElementById('heroWrap');
+heroBtn.addEventListener('mouseenter',()=>{
+  heroHovered=true;
+  heroBtn.classList.add('active');
+  heroScatter(); resize(); onAnyEnter();
+});
+heroBtn.addEventListener('mouseleave',()=>{
+  heroHovered=false;
+  heroBtn.classList.remove('active');
+  heroReset(); arcs.length=0;
+  heroWrap.style.transform='translate(0,0)';
+  onAnyLeave();
+});
+heroBtn.addEventListener('click',()=>{
+  shockwave={r:0,alpha:1};
+  body.style.transition='background 0.05s';
+  body.classList.toggle('dark');
+  setTimeout(()=>{ body.classList.toggle('dark'); setTimeout(()=>body.style.transition='',300); },80);
+});
+window.addEventListener('mousemove',e=>{
+  if(heroHovered){
+    const dx=(e.clientX-btnCX)*0.18, dy=(e.clientY-btnCY)*0.18;
+    heroWrap.style.transform=`translate(${dx}px,${dy}px)`;
   }
 });
 
-// ─── LETTER SCATTER ON HOVER ──────────────────────────────────────
-// "GO TO WORK" indices: G=0 O=1 ' '=2 T=3 O=4 ' '=5 W=6 O=7 R=8 K=9
-// On hover: T (3) vanishes, O (4) flips to "2" → reads "GO 2 WORK"
-let flipTimer = null;
-
-function scatterLetters() {
-  letters.forEach((l, i) => {
-    const dx  = (Math.random() - 0.5) * 22;
-    const dy  = (Math.random() - 0.5) * 18 - 5;
-    const rot = (Math.random() - 0.5) * 30;
-    const delay = i * 28;
-    l.style.transition = `transform ${0.5 + Math.random()*0.2}s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms, color 0.3s, opacity 0.2s ${delay}ms`;
-    l.style.transform  = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
-    l.style.color      = COLORS[i % COLORS.length];
-
-    // T (index 3) — blast it far and fade out completely
-    if (i === 3) {
-      const dir = Math.random() > 0.5 ? 1 : -1;
-      l.style.transform = `translate(${dir * (55 + Math.random()*35)}px, ${-35 - Math.random()*20}px) rotate(${dir * (60 + Math.random()*40)}deg)`;
-      l.style.opacity   = '0';
-    }
+// ─── BTN 1: LAUNCH — letters rocket up, slam back ─────────────────
+(function(){
+  const inner = document.getElementById('b1inner');
+  const word  = 'LAUNCH';
+  inner.innerHTML = word.split('').map(c=>`<span class="letter">${c}</span>`).join('');
+  const ls = [...inner.querySelectorAll('.letter')];
+  let timers = [];
+  document.getElementById('b1').addEventListener('mouseenter',()=>{
+    onAnyEnter();
+    timers.forEach(clearTimeout); timers=[];
+    ls.forEach((l,i)=>{
+      timers.push(setTimeout(()=>{
+        l.style.transition='transform 0.22s ease, opacity 0.18s';
+        l.style.transform='translateY(-130%)'; l.style.opacity='0';
+        timers.push(setTimeout(()=>{
+          l.style.transition='none';
+          l.style.transform='translateY(130%)';
+          timers.push(setTimeout(()=>{
+            l.style.transition='transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s';
+            l.style.transform='translateY(0)'; l.style.opacity='1';
+          },20));
+        },200));
+      }, i*55));
+    });
   });
-
-  // O (index 4) — flip to "2" slightly after scatter starts
-  clearTimeout(flipTimer);
-  flipTimer = setTimeout(() => {
-    const l = letters[4];
-    // phase 1: squish to 0 on X axis (half-flip)
-    l.style.transition = 'transform 0.12s ease';
-    const cur = l.style.transform;
-    l.style.transform = cur + ' scaleX(0)';
-    setTimeout(() => {
-      // swap content at the invisible frame
-      l.textContent = '2';
-      l.setAttribute('data-l', '2');
-      l.style.transition = 'transform 0.14s cubic-bezier(0.34,1.56,0.64,1)';
-      l.style.transform  = cur + ' scaleX(1)';
-    }, 120);
-  }, letters[4].getBoundingClientRect ? 180 : 180);
-}
-
-function resetLetters() {
-  clearTimeout(flipTimer);
-
-  // flip "2" back to "O" first
-  const lo = letters[4];
-  lo.style.transition = 'transform 0.1s ease';
-  const cur = lo.style.transform;
-  lo.style.transform = cur + ' scaleX(0)';
-  setTimeout(() => {
-    lo.textContent = 'O';
-    lo.setAttribute('data-l', 'O');
-    lo.style.transition = 'transform 0.12s ease';
-    lo.style.transform  = cur + ' scaleX(1)';
-  }, 100);
-
-  // restore all letters normally
-  letters.forEach((l, i) => {
-    const delay = i * 18;
-    l.style.transition = `transform 0.6s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms, color 0.3s ${delay}ms, opacity 0.3s ${delay}ms`;
-    l.style.transform  = 'translate(0,0) rotate(0deg)';
-    l.style.color      = '';
-    l.style.opacity    = '1';
+  document.getElementById('b1').addEventListener('mouseleave',()=>{
+    onAnyLeave();
+    timers.forEach(clearTimeout); timers=[];
+    ls.forEach(l=>{ l.style.transition='transform 0.3s,opacity 0.3s'; l.style.transform='translateY(0)'; l.style.opacity='1'; });
   });
-}
+})();
 
-// ─── HOVER ────────────────────────────────────────────────────────
-btn.addEventListener('mouseenter', () => {
-  hovered = true;
-  cursor.classList.add('hovered');
-  btn.classList.add('active');
-  scatterLetters();
-  resize(); // re-calc btn center after potential shifts
-});
+// ─── BTN 2: GLITCH — text scrambles into random chars ─────────────
+(function(){
+  const inner    = document.getElementById('b2inner');
+  const word     = 'CONTACT';
+  const charset  = '!@#$%^&*<>?/|0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  inner.innerHTML = word.split('').map(c=>`<span class="letter">${c}</span>`).join('');
+  const ls = [...inner.querySelectorAll('.letter')];
+  let iv=null, settle=null;
+  document.getElementById('b2').addEventListener('mouseenter',()=>{
+    onAnyEnter();
+    clearInterval(iv); clearTimeout(settle);
+    iv=setInterval(()=>{
+      ls.forEach((l,i)=>{ l.textContent=Math.random()>0.55?word[i]:charset[Math.floor(Math.random()*charset.length)]; });
+    },45);
+    settle=setTimeout(()=>{
+      clearInterval(iv);
+      ls.forEach((l,i)=>{ l.textContent=word[i]; });
+    },900);
+  });
+  document.getElementById('b2').addEventListener('mouseleave',()=>{
+    onAnyLeave();
+    clearInterval(iv); clearTimeout(settle);
+    ls.forEach((l,i)=>{ l.textContent=word[i]; });
+  });
+})();
 
-btn.addEventListener('mouseleave', () => {
-  hovered = false;
-  cursor.classList.remove('hovered');
-  btn.classList.remove('active');
-  resetLetters();
-  wrap.style.transform = 'translate(0,0)';
-  arcs.length = 0;
-});
+// ─── BTN 3: FILL — wipe ───────────────────────────────────────────
+document.getElementById('b3').addEventListener('mouseenter', onAnyEnter);
+document.getElementById('b3').addEventListener('mouseleave', onAnyLeave);
 
-// ─── CLICK ────────────────────────────────────────────────────────
-btn.addEventListener('click', () => {
-  fireShockwave();
-  // flash white
-  document.body.style.transition = 'background 0.05s';
-  document.body.style.background = '#000';
-  setTimeout(() => {
-    document.body.style.background = '#fff';
-    setTimeout(() => document.body.style.transition = '', 300);
-  }, 80);
-});
+// ─── BTN 4: WAVE — sine bounce ────────────────────────────────────
+(function(){
+  const inner = document.getElementById('b4inner');
+  const word  = 'BUILD';
+  inner.innerHTML = word.split('').map((c,i)=>`<span class="letter" style="display:inline-block">${c}</span>`).join('');
+  const ls = [...inner.querySelectorAll('.letter')];
+  let waving=false, waveRaf;
+  let t=0;
+  function wave(){
+    if(!waving) return;
+    t+=0.12;
+    ls.forEach((l,i)=>{ l.style.transform=`translateY(${Math.sin(t+i*0.9)*8}px)`; });
+    waveRaf=requestAnimationFrame(wave);
+  }
+  document.getElementById('b4').addEventListener('mouseenter',()=>{
+    onAnyEnter(); waving=true; wave();
+  });
+  document.getElementById('b4').addEventListener('mouseleave',()=>{
+    onAnyLeave(); waving=false; cancelAnimationFrame(waveRaf);
+    ls.forEach(l=>{ l.style.transition='transform 0.3s'; l.style.transform='translateY(0)'; });
+  });
+})();
+
+// ─── BTN 5: SHATTER — double border + shake ───────────────────────
+(function(){
+  const btn = document.getElementById('b5');
+  let shakeRaf, shaking=false;
+  let sx=0, sy=0;
+  function shake(){
+    if(!shaking) return;
+    sx=(Math.random()-.5)*5; sy=(Math.random()-.5)*5;
+    btn.style.transform=`translate(${sx}px,${sy}px) scale(0.97)`;
+    shakeRaf=requestAnimationFrame(shake);
+  }
+  btn.addEventListener('mouseenter',()=>{
+    onAnyEnter(); shaking=true; shake();
+  });
+  btn.addEventListener('mouseleave',()=>{
+    onAnyLeave(); shaking=false; cancelAnimationFrame(shakeRaf);
+    btn.style.transform='translate(0,0) scale(1)';
+  });
+})();
 </script>
 </body>
 </html>
