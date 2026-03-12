@@ -484,10 +484,132 @@ const aKeys  = {};
 let aMX = 0, aMY = 0;
 let aFireCD = 0;
 
+// ════════════════════════════════════════════════════════════════
+// ASTEROIDS AUDIO (Web Audio API — no files needed)
+// ════════════════════════════════════════════════════════════════
+let aAudio = null;
+let aThrustOsc = null, aThrustGain = null, aThrustActive = false;
+let bgTimeout = null, bgBeatIdx = 0;
+
+function initAudio() {
+  if (aAudio) { if (aAudio.state === 'suspended') aAudio.resume(); return; }
+  aAudio = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+// Asteroid explosion — boomy noise burst, pitch by size
+function playBoom(size) {
+  if (!aAudio) return;
+  const t = aAudio.currentTime;
+  const dur = size === 'large' ? 0.65 : size === 'medium' ? 0.4 : 0.22;
+  const baseFreq = size === 'large' ? 55 : size === 'medium' ? 90 : 160;
+  const vol = size === 'large' ? 0.55 : size === 'medium' ? 0.4 : 0.28;
+
+  // tonal thud
+  const osc = aAudio.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(baseFreq * 2, t);
+  osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.3, t + dur);
+  const ogain = aAudio.createGain();
+  ogain.gain.setValueAtTime(vol, t);
+  ogain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(ogain); ogain.connect(aAudio.destination);
+  osc.start(t); osc.stop(t + dur + 0.05);
+
+  // noise crunch
+  const bufLen = Math.ceil(aAudio.sampleRate * dur);
+  const buf = aAudio.createBuffer(1, bufLen, aAudio.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 1.8);
+  const noise = aAudio.createBufferSource();
+  noise.buffer = buf;
+  const lp = aAudio.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = size === 'large' ? 280 : 500;
+  const ngain = aAudio.createGain(); ngain.gain.value = vol * 0.5;
+  noise.connect(lp); lp.connect(ngain); ngain.connect(aAudio.destination);
+  noise.start(t);
+}
+
+// Laser pew
+function playShoot() {
+  if (!aAudio) return;
+  const t = aAudio.currentTime;
+  const osc = aAudio.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(720, t);
+  osc.frequency.exponentialRampToValueAtTime(80, t + 0.11);
+  const g = aAudio.createGain();
+  g.gain.setValueAtTime(0.13, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  osc.connect(g); g.connect(aAudio.destination);
+  osc.start(t); osc.stop(t + 0.13);
+}
+
+// Rocket thruster hiss
+function startThrustSound() {
+  if (!aAudio || aThrustActive) return;
+  aThrustActive = true;
+  aThrustOsc = aAudio.createOscillator();
+  aThrustOsc.type = 'sawtooth';
+  aThrustOsc.frequency.value = 60;
+  const hiss = aAudio.createBiquadFilter();
+  hiss.type = 'bandpass'; hiss.frequency.value = 900; hiss.Q.value = 0.7;
+  aThrustGain = aAudio.createGain();
+  aThrustGain.gain.setValueAtTime(0, aAudio.currentTime);
+  aThrustGain.gain.linearRampToValueAtTime(0.06, aAudio.currentTime + 0.06);
+  aThrustOsc.connect(hiss); hiss.connect(aThrustGain); aThrustGain.connect(aAudio.destination);
+  aThrustOsc.start();
+}
+
+function stopThrustSound() {
+  if (!aThrustActive || !aThrustOsc) return;
+  aThrustActive = false;
+  try {
+    aThrustGain.gain.linearRampToValueAtTime(0, aAudio.currentTime + 0.08);
+    aThrustOsc.stop(aAudio.currentTime + 0.1);
+  } catch(e) {}
+  aThrustOsc = null; aThrustGain = null;
+}
+
+// Classic Asteroids heartbeat — two alternating low tones that speed up with danger
+function startBgMusic() {
+  if (!aAudio) return;
+  stopBgMusic();
+  bgBeatIdx = 0;
+  const notes = [110, 82.41]; // A2 / E2
+
+  function beat() {
+    if (!aAudio || aState !== 'PLAYING') return;
+    const t = aAudio.currentTime;
+    const freq = notes[bgBeatIdx & 1];
+    bgBeatIdx++;
+
+    const osc = aAudio.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const g = aAudio.createGain();
+    g.gain.setValueAtTime(0.18, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    osc.connect(g); g.connect(aAudio.destination);
+    osc.start(t); osc.stop(t + 0.2);
+
+    // pace: starts slow, accelerates with score + number of roids left
+    const danger = Math.max(1, aRoids.length);
+    const tempo = Math.max(280, 1800 - aScore * 6 - danger * 40);
+    bgTimeout = setTimeout(beat, tempo);
+  }
+  beat();
+}
+
+function stopBgMusic() {
+  if (bgTimeout) { clearTimeout(bgTimeout); bgTimeout = null; }
+}
+
+// ────────────────────────────────────────────────────────────────
 function openAsteroids() {
   if (gameOn) stopGame();
   astOv.classList.add('open');
   aResize();
+  aMX = aW / 2; aMY = aH / 2;  // ← init aim to center so ship doesn't beeline top-left
   aInit();
   if (!aRaf) { aRunning = true; aRaf = requestAnimationFrame(aLoop); }
 }
@@ -495,6 +617,7 @@ function openAsteroids() {
 function closeAsteroids() {
   astOv.classList.remove('open');
   aRunning = false;
+  stopBgMusic(); stopThrustSound();
   if (aRaf) { cancelAnimationFrame(aRaf); aRaf = null; }
 }
 
@@ -585,19 +708,20 @@ function aUpdateHUD() {
 // ── keyboard / mouse input (asteroids) ──────────────
 window.addEventListener('keydown', e=>{
   aKeys[e.code]=true;
-  if(e.code==='Space' && astOv.classList.contains('open')) {
-    e.preventDefault();
-    if(aState==='WAITING'||aState==='GAMEOVER') aStartPlaying();
+  if(astOv.classList.contains('open')) {
+    if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+    if(e.code==='Space'&&(aState==='WAITING'||aState==='GAMEOVER')) aStartPlaying();
   }
 });
-window.addEventListener('keyup',   e=>{ aKeys[e.code]=false; });
+window.addEventListener('keyup', e=>{ aKeys[e.code]=false; });
 
-astCv.addEventListener('mousemove', e=>{ aMX=e.clientX; aMY=e.clientY; });
-astCv.addEventListener('mousedown', e=>{ if(e.button===0&&aState==='PLAYING') { aKeys['Space']=true; } });
-astCv.addEventListener('mouseup',   e=>{ if(e.button===0) aKeys['Space']=false; });
+astOv.addEventListener('mousemove', e=>{ aMX=e.clientX; aMY=e.clientY; });
+astOv.addEventListener('mousedown', e=>{ if(e.button===0&&aState==='PLAYING') { aKeys['Space']=true; } });
+astOv.addEventListener('mouseup',   e=>{ if(e.button===0) aKeys['Space']=false; });
 
 function aStartPlaying() {
-  if (aState==='GAMEOVER') { aInit(); return; }
+  if (aState==='GAMEOVER') { stopBgMusic(); stopThrustSound(); aInit(); return; }
+  initAudio();
   aState = 'PLAYING';
   aBullets = []; aRoids = []; aParts = [];
   aShip = makeShip(); aShip.invT = 120;
@@ -606,6 +730,7 @@ function aStartPlaying() {
   astMsgEl.style.opacity = 0;
   astHint.classList.add('hidden');
   spawnWave();
+  startBgMusic();
 }
 
 // ── game loop ────────────────────────────────────────
@@ -658,23 +783,26 @@ function aUpdate() {
 
   // thrust
   const thrusting=aKeys['ArrowUp']||aKeys['KeyW']||aKeys['ShiftLeft'];
+  const reversing=aKeys['ArrowDown']||aKeys['KeyS'];
   s.thrust=thrusting;
   if(thrusting){s.vx+=Math.cos(s.angle)*0.24;s.vy+=Math.sin(s.angle)*0.24;}
+  if(reversing){s.vx-=Math.cos(s.angle)*0.14;s.vy-=Math.sin(s.angle)*0.14;}
   s.vx*=0.984;s.vy*=0.984;
+  // thrust sound
+  if(thrusting||reversing) startThrustSound(); else stopThrustSound();
   s.x+=s.vx;s.y+=s.vy;
   s.x=((s.x%aW)+aW)%aW;s.y=((s.y%aH)+aH)%aH;
   if(s.invT>0)s.invT--;
 
   // shoot
   if(aFireCD>0)aFireCD--;
-  if(aKeys['Space']&&aFireCD===0){fireBullet();aFireCD=13;}
+  if(aKeys['Space']&&aFireCD===0){fireBullet();aFireCD=13;playShoot();}
 
   // bullets
   for(let i=aBullets.length-1;i>=0;i--){
     const b=aBullets[i];
     b.x+=b.vx;b.y+=b.vy;
-    b.x=((b.x%aW)+aW)%aW;b.y=((b.y%aH)+aH)%aH;
-    b.life--;if(b.life<=0){aBullets.splice(i,1);continue;}
+    b.life--;if(b.life<=0||b.x<0||b.x>aW||b.y<0||b.y>aH){aBullets.splice(i,1);continue;}
     // bullet vs roids
     let hit=false;
     for(let j=aRoids.length-1;j>=0;j--){
@@ -683,6 +811,7 @@ function aUpdate() {
         aBullets.splice(i,1);
         const pts=r.size==='large'?20:r.size==='medium'?50:100;
         aScore+=pts;aUpdateHUD();
+        playBoom(r.size);
         spawnParts(r.x,r.y,r.size==='large'?14:9,'#fff');
         if(r.size==='large'){aRoids.push(makeRoid(r.x,r.y,'medium'));aRoids.push(makeRoid(r.x,r.y,'medium'));}
         else if(r.size==='medium'){aRoids.push(makeRoid(r.x,r.y,'small'));aRoids.push(makeRoid(r.x,r.y,'small'));}
