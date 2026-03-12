@@ -412,24 +412,68 @@ window.addEventListener('mousemove', e => {
 });
 
 // ─── LETTER SCATTER ON HOVER ──────────────────────────────────────
+// "GO TO WORK" indices: G=0 O=1 ' '=2 T=3 O=4 ' '=5 W=6 O=7 R=8 K=9
+// On hover: T (3) vanishes, O (4) flips to "2" → reads "GO 2 WORK"
+let flipTimer = null;
+
 function scatterLetters() {
   letters.forEach((l, i) => {
-    const dx = (Math.random() - 0.5) * 22;
-    const dy = (Math.random() - 0.5) * 18 - 5;
+    const dx  = (Math.random() - 0.5) * 22;
+    const dy  = (Math.random() - 0.5) * 18 - 5;
     const rot = (Math.random() - 0.5) * 30;
     const delay = i * 28;
-    l.style.transition = `transform ${0.5 + Math.random()*0.2}s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms, color 0.3s`;
+    l.style.transition = `transform ${0.5 + Math.random()*0.2}s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms, color 0.3s, opacity 0.2s ${delay}ms`;
     l.style.transform  = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
     l.style.color      = COLORS[i % COLORS.length];
+
+    // T (index 3) — blast it far and fade out completely
+    if (i === 3) {
+      const dir = Math.random() > 0.5 ? 1 : -1;
+      l.style.transform = `translate(${dir * (55 + Math.random()*35)}px, ${-35 - Math.random()*20}px) rotate(${dir * (60 + Math.random()*40)}deg)`;
+      l.style.opacity   = '0';
+    }
   });
+
+  // O (index 4) — flip to "2" slightly after scatter starts
+  clearTimeout(flipTimer);
+  flipTimer = setTimeout(() => {
+    const l = letters[4];
+    // phase 1: squish to 0 on X axis (half-flip)
+    l.style.transition = 'transform 0.12s ease';
+    const cur = l.style.transform;
+    l.style.transform = cur + ' scaleX(0)';
+    setTimeout(() => {
+      // swap content at the invisible frame
+      l.textContent = '2';
+      l.setAttribute('data-l', '2');
+      l.style.transition = 'transform 0.14s cubic-bezier(0.34,1.56,0.64,1)';
+      l.style.transform  = cur + ' scaleX(1)';
+    }, 120);
+  }, letters[4].getBoundingClientRect ? 180 : 180);
 }
 
 function resetLetters() {
+  clearTimeout(flipTimer);
+
+  // flip "2" back to "O" first
+  const lo = letters[4];
+  lo.style.transition = 'transform 0.1s ease';
+  const cur = lo.style.transform;
+  lo.style.transform = cur + ' scaleX(0)';
+  setTimeout(() => {
+    lo.textContent = 'O';
+    lo.setAttribute('data-l', 'O');
+    lo.style.transition = 'transform 0.12s ease';
+    lo.style.transform  = cur + ' scaleX(1)';
+  }, 100);
+
+  // restore all letters normally
   letters.forEach((l, i) => {
     const delay = i * 18;
-    l.style.transition = `transform 0.6s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms, color 0.3s ${delay}ms`;
+    l.style.transition = `transform 0.6s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms, color 0.3s ${delay}ms, opacity 0.3s ${delay}ms`;
     l.style.transform  = 'translate(0,0) rotate(0deg)';
     l.style.color      = '';
+    l.style.opacity    = '1';
   });
 }
 
