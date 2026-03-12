@@ -86,8 +86,7 @@ canvas {
 .btn-hero.active .letter::before { opacity: 0.6; transform: translate(-2px, 0); }
 .btn-hero.active .letter::after  { opacity: 0.6; transform: translate(2px, 0); }
 
-/* hero fades to a ghost while game runs */
-.hero-wrap.game-on .btn-hero { opacity: 0.08; pointer-events: auto; }
+.hero-wrap.game-on .btn-hero { opacity: 0.07; pointer-events: auto; }
 
 /* ── GAME UI ──────────────────────────────────────── */
 #flash {
@@ -96,6 +95,8 @@ canvas {
   pointer-events: none;
   z-index: 500;
 }
+
+/* score — bottom right */
 #score-wrap {
   position: fixed;
   bottom: 32px;
@@ -112,20 +113,81 @@ canvas {
   font-family: 'Courier New', monospace;
   font-size: 9px;
   letter-spacing: 0.3em;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.3);
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 #score-wrap .num {
   display: block;
   font-family: 'Courier New', monospace;
-  font-size: 46px;
+  font-size: 52px;
   font-weight: bold;
   color: #fff;
   line-height: 1;
-  transition: color 0.12s;
 }
-#score-wrap .num.red { color: #ff2d55; }
+#score-wrap .lvl-lbl {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: rgba(255,255,255,0.22);
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+/* level-up flash — center */
+#lvl-flash {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: #ff9f0a;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 450;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+#lvl-flash.on { opacity: 1; }
+
+/* game over overlay */
+#gameover {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+#gameover.on { opacity: 1; }
+#gameover .go-num {
+  font-family: 'Courier New', monospace;
+  font-size: 110px;
+  font-weight: bold;
+  color: #ff2d55;
+  line-height: 1;
+}
+#gameover .go-sub {
+  font-size: 10px;
+  letter-spacing: 0.38em;
+  color: rgba(255,255,255,0.32);
+  margin-top: 12px;
+  text-transform: uppercase;
+}
+#gameover .go-hint {
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: rgba(255,255,255,0.14);
+  margin-top: 28px;
+  text-transform: uppercase;
+}
 
 /* ── BUTTONS ──────────────────────────────────────── */
 .btn-row {
@@ -153,13 +215,9 @@ canvas {
   z-index: 10;
 }
 
-/* BTN 1: LAUNCH */
 .btn-launch .letter { display: inline-block; }
-
-/* BTN 2: GLITCH */
 .btn-glitch { font-family: 'Courier New', monospace; }
 
-/* BTN 3: FILL */
 .btn-fill::before {
   content: '';
   position: absolute;
@@ -171,17 +229,11 @@ canvas {
   z-index: 0;
 }
 .btn-fill:hover::before { transform: scaleX(1); }
-.btn-fill .inner {
-  position: relative;
-  z-index: 1;
-  transition: color 0.35s cubic-bezier(0.77,0,0.175,1);
-}
+.btn-fill .inner { position: relative; z-index: 1; transition: color 0.35s cubic-bezier(0.77,0,0.175,1); }
 .btn-fill:hover .inner { color: #000; }
 
-/* BTN 4: WAVE */
 .btn-wave .letter { display: inline-block; }
 
-/* BTN 5: SHATTER */
 .btn-shatter { transition: transform 0.15s; }
 .btn-shatter::after {
   content: '';
@@ -195,7 +247,6 @@ canvas {
 .btn-shatter:hover { transform: scale(0.96); }
 .btn-shatter:hover::after { opacity: 0.4; transform: scale(1.0); }
 
-/* bouncing state — transform only, keeps layout space */
 .btn.bouncing { z-index: 20 !important; will-change: transform; }
 </style>
 </head>
@@ -204,7 +255,20 @@ canvas {
 <div class="cursor" id="cursor"></div>
 <canvas id="c"></canvas>
 <div id="flash"></div>
-<div id="score-wrap"><span class="lbl">SCORE</span><span class="num" id="scoreNum">0000</span></div>
+
+<div id="score-wrap">
+  <span class="lbl">SEC</span>
+  <span class="num" id="scoreNum">000</span>
+  <span class="lvl-lbl" id="scoreLvl">LVL 1</span>
+</div>
+
+<div id="lvl-flash"></div>
+
+<div id="gameover">
+  <div class="go-num" id="goNum">0</div>
+  <div class="go-sub">seconds survived</div>
+  <div class="go-hint">hover to play again</div>
+</div>
 
 <!-- HERO -->
 <div class="hero-wrap" id="heroWrap">
@@ -235,14 +299,18 @@ canvas {
 </div>
 
 <script>
-const COLORS = ['#ff2d55','#ff9f0a','#ffcc00','#30d158','#0a84ff','#bf5af2','#ff375f','#00c8ff'];
-const NPARTS = 200;
+const COLORS  = ['#ff2d55','#ff9f0a','#ffcc00','#30d158','#0a84ff','#bf5af2','#ff375f','#00c8ff'];
+const NPARTS  = 200;
 const canvas  = document.getElementById('c');
 const ctx     = canvas.getContext('2d');
-const cursorEl = document.getElementById('cursor');
-const flashEl  = document.getElementById('flash');
+const cursorEl  = document.getElementById('cursor');
+const flashEl   = document.getElementById('flash');
 const scoreWrap = document.getElementById('score-wrap');
 const scoreNum  = document.getElementById('scoreNum');
+const scoreLvl  = document.getElementById('scoreLvl');
+const lvlFlash  = document.getElementById('lvl-flash');
+const gameOverEl = document.getElementById('gameover');
+const goNum     = document.getElementById('goNum');
 
 let W, H, mouseX = 0, mouseY = 0;
 
@@ -363,15 +431,17 @@ class Arc {
 const parts = Array.from({length:NPARTS}, ()=>new Particle());
 let arcTimer=0, dashOffset=0, shockwave=null;
 
-// game state — declared here so render() can reference them safely
+// ── game state (declared before render) ─────────────────────────
 let gameOn   = false;
+let dead     = false;
 let score    = 0;
+let level    = 0;
 let debris   = [];
 let bouncers = [];
 let chaos    = false;
-let hitCD    = 0;
 let spawnRef = null;
-let tickRef  = null;
+let secRef   = null;
+const HIT_R  = 5;
 
 // ── RENDER LOOP ──────────────────────────────────────────────────
 function render() {
@@ -442,14 +512,14 @@ heroBtn.addEventListener('mouseenter', ()=>{
   heroHovered = true;
   heroBtn.classList.add('active');
   heroScatter(); resize();
-  if (gameOn) { stopGame(); } else { startGame(); }
+  if (gameOn) { stopGame(); }
+  else        { startGame(); }
 });
 heroBtn.addEventListener('mouseleave', ()=>{
   heroHovered = false;
   heroBtn.classList.remove('active');
   heroReset(); arcs.length=0;
   heroWrap.style.transform='translate(0,0)';
-  // fade hero to ghost once player moves off into the game
   if (gameOn) setTimeout(()=>{ if(gameOn) heroWrap.classList.add('game-on'); }, 350);
 });
 heroBtn.addEventListener('click', ()=>{ shockwave={r:0,alpha:1}; });
@@ -535,130 +605,155 @@ window.addEventListener('mousemove', e=>{
 //  GAME
 // ════════════════════════════════════════════════════════════════
 
-const HIT_R = 8; // cursor collision radius
+// ── difficulty curves ────────────────────────────────────────────
+function getLevel()      { return Math.floor(score / 30); }
+function getSpeed()      { return 3.5 + getLevel() * 2.4; }          // px/frame, fast from the start
+function getGapWidth()   { return Math.max(42, 108 - getLevel() * 14); } // px, shrinks per level
+function getSpawnDelay() { return Math.max(280, 1400 - getLevel() * 220); } // ms between gates
 
-// ── SCORE ────────────────────────────────────────────────────────
-function setScore(n) {
-  score = Math.max(0, n);
-  scoreNum.textContent = score.toString().padStart(4,'0');
-}
-function addScore(n) {
-  setScore(score + n);
-  if (n < 0) {
-    scoreNum.classList.add('red');
-    setTimeout(()=> scoreNum.classList.remove('red'), 200);
-  }
-  if (score >= 1000 && !chaos) activateChaos();
+// ── score display ────────────────────────────────────────────────
+function refreshHUD() {
+  scoreNum.textContent = score.toString().padStart(3,'0');
+  scoreLvl.textContent = `LVL ${getLevel()+1}`;
 }
 
-// ── START / STOP ─────────────────────────────────────────────────
+// ── start / stop / die ───────────────────────────────────────────
 function startGame() {
-  gameOn  = true;
-  score   = 0;
-  debris  = [];
-  bouncers = [];
-  chaos   = false;
-  hitCD   = 0;
-  setScore(0);
+  gameOn = true; dead = false; score = 0; level = 0;
+  debris = []; bouncers = []; chaos = false;
+  refreshHUD();
   scoreWrap.classList.add('on');
-  tickRef = setInterval(()=>{ if(gameOn) addScore(1); }, 2500); // slow tick
+  gameOverEl.classList.remove('on');
+  heroWrap.classList.remove('game-on');
+
+  // 1-second tick
+  secRef = setInterval(()=>{
+    if (!gameOn) return;
+    score++;
+    const newLevel = getLevel();
+    if (newLevel > level) {
+      level = newLevel;
+      // visual level-up flash
+      lvlFlash.textContent = `LEVEL ${level + 1}`;
+      lvlFlash.classList.add('on');
+      setTimeout(()=> lvlFlash.classList.remove('on'), 900);
+      // chaos mode at level 4 (120s)
+      if (level === 4 && !chaos) activateChaos();
+    }
+    refreshHUD();
+  }, 1000);
+
   scheduleSpawn();
 }
 
 function stopGame() {
-  gameOn = false;
-  clearInterval(tickRef);
-  clearTimeout(spawnRef);
-  debris  = [];
-
-  // restore bouncers
-  if (chaos) {
-    bouncers.forEach(b => {
-      b.el.classList.remove('bouncing');
-      b.el.style.transform = '';
-    });
-    bouncers = [];
-    chaos = false;
-  }
-
+  // voluntary escape
+  gameOn = false; dead = false;
+  clearInterval(secRef); clearTimeout(spawnRef);
+  debris = [];
+  resetBouncers();
   scoreWrap.classList.remove('on');
   heroWrap.classList.remove('game-on');
-
-  // green flash = escaped
-  flashEl.style.background = 'rgba(48,209,88,0.14)';
+  flashEl.style.background = 'rgba(48,209,88,0.13)';
   setTimeout(()=>{ flashEl.style.background=''; }, 380);
 }
 
-// ── DEBRIS SPAWN ─────────────────────────────────────────────────
-function spawnInterval() {
-  if (score < 100)  return 1800;
-  if (score < 300)  return 1300;
-  if (score < 600)  return 950;
-  if (score < 1000) return 620;
-  return 370;
+function die() {
+  gameOn = false; dead = true;
+  clearInterval(secRef); clearTimeout(spawnRef);
+  debris = [];
+  resetBouncers();
+  scoreWrap.classList.remove('on');
+  heroWrap.classList.remove('game-on');
+  goNum.textContent = score;
+  gameOverEl.classList.add('on');
+  // hard red flash
+  flashEl.style.background = 'rgba(255,45,85,0.5)';
+  setTimeout(()=>{ flashEl.style.background=''; }, 450);
 }
 
+// ── spawn ────────────────────────────────────────────────────────
 function scheduleSpawn() {
   if (!gameOn) return;
   spawnRef = setTimeout(()=>{
     if (!gameOn) return;
-    debris.push(new Rock());
-    if (score > 350  && Math.random() < 0.35) debris.push(new Rock());
-    if (score > 700  && Math.random() < 0.25) debris.push(new Rock());
+    debris.push(new Gate());
+    // occasionally spawn a second offset gate right behind
+    if (getLevel() >= 2 && Math.random() < 0.35) {
+      setTimeout(()=>{ if(gameOn) debris.push(new Gate()); }, 180);
+    }
     scheduleSpawn();
-  }, spawnInterval() + Math.random()*420);
+  }, getSpawnDelay() + Math.random()*300);
 }
 
-// ── ROCK (debris) ────────────────────────────────────────────────
-class Rock {
+// ── Gate (falling obstacle with a narrow gap) ────────────────────
+class Gate {
   constructor() {
-    const t = Math.floor(Math.random()*4);
-    if (t===0) { this.w=14+Math.random()*22; this.h=14+Math.random()*22; }  // block
-    if (t===1) { this.w=38+Math.random()*32; this.h=4+Math.random()*6;   }  // wide bar
-    if (t===2) { this.w=6+Math.random()*8;   this.h=6+Math.random()*8;   }  // pebble
-    if (t===3) { this.w=18+Math.random()*14; this.h=18+Math.random()*14; }  // medium
-    this.x  = Math.random() * (W - this.w);
-    this.y  = -this.h - 8;
-    const spd = 1.6 + Math.random()*2 + Math.min(score * 0.004, 6);
-    this.vy = spd;
-    this.vx = (Math.random()-0.5) * 1.5;
-    this.a  = 0.6 + Math.random()*0.4;
-    this.fl = 0;      // flash timer
+    this.y     = -22;
+    this.h     = 9 + Math.random() * 6;     // thin horizontal bar
+    this.speed = getSpeed() + Math.random(); // slight variance
+
+    const gap  = getGapWidth();
+    const gapX = 50 + Math.random() * (W - 100 - gap);
+
+    // left block | gap | right block
+    this.segs = [
+      { x: 0,          w: gapX           },
+      { x: gapX + gap, w: W - gapX - gap }
+    ];
+
+    // level 3+: sometimes split the gap with a thin pillar
+    this.pillar = null;
+    if (getLevel() >= 3 && Math.random() < 0.35) {
+      const px = gapX + gap * 0.5 - 5;
+      this.pillar = { x: px, w: 10 };
+    }
+
     this.done = false;
   }
+
   update() {
-    this.x += this.vx; this.y += this.vy;
-    if (this.x < 0)       { this.x = 0;       this.vx =  Math.abs(this.vx); }
-    if (this.x+this.w > W){ this.x = W-this.w; this.vx = -Math.abs(this.vx); }
-    if (this.fl > 0) this.fl--;
-    if (this.y > H+30) this.done = true;
+    this.y += this.speed;
+    if (this.y > H + 30) this.done = true;
   }
+
   draw() {
     ctx.save();
-    ctx.globalAlpha = this.a;
-    ctx.fillStyle   = this.fl > 0 ? '#ff2d55' : '#fff';
-    ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    for (const s of this.segs) ctx.fillRect(s.x, this.y, s.w, this.h);
+    if (this.pillar) ctx.fillRect(this.pillar.x, this.y, this.pillar.w, this.h);
     ctx.restore();
   }
+
   hits(mx, my) {
-    return mx+HIT_R > this.x && mx-HIT_R < this.x+this.w &&
-           my+HIT_R > this.y && my-HIT_R < this.y+this.h;
+    // quick vertical cull
+    if (my + HIT_R < this.y || my - HIT_R > this.y + this.h) return false;
+    for (const s of this.segs) {
+      if (mx + HIT_R > s.x && mx - HIT_R < s.x + s.w) return true;
+    }
+    if (this.pillar && mx + HIT_R > this.pillar.x && mx - HIT_R < this.pillar.x + this.pillar.w) return true;
+    return false;
   }
 }
 
-// ── CHAOS MODE (1000 pts) ────────────────────────────────────────
+// ── static button collision ──────────────────────────────────────
+function checkStaticBtns() {
+  if (chaos) return;
+  ['b1','b2','b3','b4','b5'].forEach(id => {
+    const r = document.getElementById(id).getBoundingClientRect();
+    if (mouseX > r.left && mouseX < r.right && mouseY > r.top && mouseY < r.bottom) die();
+  });
+}
+
+// ── chaos mode (level 4 = 120s) ──────────────────────────────────
 function activateChaos() {
   chaos = true;
-  const ids = ['b1','b2','b3','b4','b5'];
-  ids.forEach(id => {
+  ['b1','b2','b3','b4','b5'].forEach(id => {
     const el = document.getElementById(id);
     const r  = el.getBoundingClientRect();
-    // store original layout position
-    const ox = r.left, oy = r.top;
     bouncers.push({
-      el, ox, oy,
-      x: r.left, y: r.top,
-      w: r.width, h: r.height,
+      el, ox: r.left, oy: r.top,
+      x: r.left, y: r.top, w: r.width, h: r.height,
       vx: (3 + Math.random()*3) * (Math.random()<0.5?1:-1),
       vy: (3 + Math.random()*3) * (Math.random()<0.5?1:-1),
     });
@@ -669,52 +764,28 @@ function activateChaos() {
 function updateBouncers() {
   bouncers.forEach(b => {
     b.x += b.vx; b.y += b.vy;
-    if (b.x < 0)       { b.x = 0;       b.vx =  Math.abs(b.vx); }
-    if (b.x+b.w > W)   { b.x = W-b.w;   b.vx = -Math.abs(b.vx); }
-    if (b.y < 0)       { b.y = 0;        b.vy =  Math.abs(b.vy); }
-    if (b.y+b.h > H)   { b.y = H-b.h;   b.vy = -Math.abs(b.vy); }
-    // move via transform (preserves layout space)
+    if (b.x < 0)     { b.x = 0;     b.vx =  Math.abs(b.vx); }
+    if (b.x+b.w > W) { b.x = W-b.w; b.vx = -Math.abs(b.vx); }
+    if (b.y < 0)     { b.y = 0;     b.vy =  Math.abs(b.vy); }
+    if (b.y+b.h > H) { b.y = H-b.h; b.vy = -Math.abs(b.vy); }
     b.el.style.transform = `translate(${b.x - b.ox}px, ${b.y - b.oy}px)`;
-    // cursor collision
-    if (hitCD===0 && mouseX > b.x && mouseX < b.x+b.w && mouseY > b.y && mouseY < b.y+b.h) {
-      onHit();
-    }
+    if (mouseX > b.x && mouseX < b.x+b.w && mouseY > b.y && mouseY < b.y+b.h) die();
   });
 }
 
-// ── STATIC BUTTON COLLISION ──────────────────────────────────────
-function checkStaticBtns() {
-  if (chaos) return; // handled in updateBouncers
-  ['b1','b2','b3','b4','b5'].forEach(id => {
-    if (hitCD > 0) return;
-    const r = document.getElementById(id).getBoundingClientRect();
-    if (mouseX > r.left && mouseX < r.right && mouseY > r.top && mouseY < r.bottom) onHit();
-  });
+function resetBouncers() {
+  bouncers.forEach(b => { b.el.classList.remove('bouncing'); b.el.style.transform=''; });
+  bouncers = []; chaos = false;
 }
 
-// ── HIT ──────────────────────────────────────────────────────────
-function onHit() {
-  hitCD = 50;
-  addScore(-5);
-  flashEl.style.background = 'rgba(255,45,85,0.2)';
-  setTimeout(()=>{ flashEl.style.background=''; }, 130);
-}
-
-// ── GAME TICK (called from render loop) ──────────────────────────
+// ── game tick (runs every frame) ─────────────────────────────────
 function tickGame() {
-  if (hitCD > 0) hitCD--;
-
-  // debris
   for (let i = debris.length-1; i >= 0; i--) {
     const d = debris[i];
     d.update(); d.draw();
-    // collision
-    if (hitCD===0 && d.hits(mouseX, mouseY)) { d.fl=12; onHit(); }
-    // cleared bottom → +1
-    if (!d._scored && d.done) { d._scored=true; addScore(1); }
+    if (d.hits(mouseX, mouseY)) { die(); return; }
     if (d.done) debris.splice(i,1);
   }
-
   checkStaticBtns();
   if (chaos) updateBouncers();
 }
